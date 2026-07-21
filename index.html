@@ -1,72 +1,344 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Scanner OBD-II 3D - Concepto</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050811;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0f7fc;
+        }
 
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="https://glitch.com/favicon.ico" />
+        /* Contenedor del lienzo 3D */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
 
-    <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-    <title>Hello World!</title>
+        /* Panel de diagnóstico superior */
+        #header-hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(10, 20, 40, 0.85);
+            border: 1px solid #00f0ff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+            text-align: center;
+        }
 
-    <!-- The website stylesheet -->
-    <link rel="stylesheet" href="/style.css" />
+        #header-hud h1 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            letter-spacing: 2px;
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
 
-    <!-- The website JavaScript file -->
-    <script src="/script.js" defer></script>
-  </head>
-  <body>
-    <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-    <div class="wrapper">
-      <div class="content" role="main">
-        <h1 class="title">Hello World!</h1>
-        <img
-          src="https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2Fillustration.svg?v=1618177344016"
-          class="illustration"
-          alt="Editor illustration"
-          title="Click the image!"
-        />
-        <div class="instructions">
-          <h2>Using this project</h2>
-          <p>
-            This is the Glitch <strong>Hello Website</strong> project. You can
-            use it to build your own site. Check out the code in the editor and open
-            the <span class="fileopener" data-file="TODO.md" data-line="0"
-              >TODO</span> for next steps!
-          </p>
-          <!--  🚧 TODO: ADD BUTTON HERE -->
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
 
-          <!-- Once you've added the button from TODO.md, click it in the page -->
-          <!-- Check out the function in script.js to see how it works -->
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #00f0ff;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #8ab4f8;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* Panel de simulación inferior */
+        #controls-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            width: 90%;
+            max-width: 500px;
+            background: rgba(10, 20, 40, 0.9);
+            border: 1px solid #00f0ff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #8ab4f8;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: #102040;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        /* Botón de Escaneo de Fallas */
+        .btn-scan {
+            width: 100%;
+            background: #00f0ff;
+            color: #050811;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn-scan:active {
+            background: #00a8b5;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+        }
+
+        /* Notificación de Error */
+        #error-alert {
+            display: none;
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            background: rgba(255, 50, 50, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #ff3333;
+            box-shadow: 0 0 25px rgba(255, 50, 50, 0.6);
+            font-weight: bold;
+            text-align: center;
+            font-size: 13px;
+        }
+    </style>
+    <!-- Cargamos Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- HUD Superior de Diagnóstico -->
+    <div id="header-hud">
+        <h1>SISTEMA DE DIAGNÓSTICO OBD-II</h1>
+        <div class="stats-grid">
+            <div class="stat-box" style="border-left-color: #00f0ff;">
+                <div class="stat-label">Régimen Motor</div>
+                <div class="stat-value" id="rpm-display">800 RPM</div>
+            </div>
+            <div class="stat-box" id="temp-box" style="border-left-color: #00ff66;">
+                <div class="stat-label">Temp. Refrigerante</div>
+                <div class="stat-value" id="temp-display">25 °C</div>
+            </div>
         </div>
-      </div>
     </div>
-    <!-- The footer holds our remix button — you can keep or delete it ✂ -->
-    <footer class="footer">
-      <div class="links"></div>
-      <a
-        class="btn--remix"
-        target="_top"
-        href="https://glitch.com/edit/#!/remix/glitch-hello-website"
-      >
-        <img
-          src="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2FLogo_Color.svg?v=1618199565140"
-          alt=""
-        />
-        Remix on Glitch
-      </a>
-    </footer>
-  </body>
+
+    <!-- Mensaje de Error Simulado -->
+    <div id="error-alert">
+        ⚠️ ATENCIÓN: CÓDIGO DE ERROR DETECTADO<br>
+        <span style="font-size: 11px; font-weight: normal;">P0300 - Fallo de encendido en cilindros múltiples</span>
+    </div>
+
+    <!-- Controles Inferiores -->
+    <div id="controls-panel">
+        <div class="control-group">
+            <label for="rpm-slider">Acelerador (RPM):</label>
+            <input type="range" id="rpm-slider" min="800" max="7000" value="800">
+        </div>
+        <div class="control-group">
+            <label for="temp-slider">Temperatura del Motor (°C):</label>
+            <input type="range" id="temp-slider" min="20" max="120" value="25">
+        </div>
+        <button class="btn-scan" id="scan-btn">SIMULAR ESCANEO DE ERRORES</button>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN THREE.JS ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Cámara con perspectiva
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 6);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        // Luces para dar volumen en 3D
+        const ambientLight = new THREE.AmbientLight(0x0a1428);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 1);
+        dirLight1.position.set(5, 5, 5);
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0xff0055, 0.5);
+        dirLight2.position.set(-5, -5, -5);
+        scene.add(dirLight2);
+
+        // --- CREACIÓN DEL "MOTOR SIMULADO" (BLOQUE CENTRAL) ---
+        const engineGroup = new THREE.Group();
+
+        // Bloque de motor principal
+        const blockGeo = new THREE.BoxGeometry(2.5, 1.5, 1.8);
+        const blockMat = new THREE.MeshPhongMaterial({ 
+            color: 0x1a2b4c, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.8
+        });
+        const engineBlock = new THREE.Mesh(blockGeo, blockMat);
+        engineGroup.add(engineBlock);
+
+        // Cilindros/Pistones superiores
+        const pistonGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 8);
+        const pistonMat = new THREE.MeshPhongMaterial({ color: 0x00f0ff, wireframe: true });
+        
+        const pistons = [];
+        for (let i = 0; i < 4; i++) {
+            const piston = new THREE.Mesh(pistonGeo, pistonMat);
+            // Los acomodamos en línea para simular un motor de 4 cilindros en línea
+            piston.position.set(-1.2 + (i * 0.8), 0.9, 0);
+            engineGroup.add(piston);
+            pistons.push(piston);
+        }
+
+        scene.add(engineGroup);
+
+        // --- VARIABLES DE CONTROL ---
+        let currentRPM = 800;
+        let currentTemp = 25;
+        let errorState = false;
+
+        // --- SELECTORES DOM (INTERFAZ HTML) ---
+        const rpmSlider = document.getElementById('rpm-slider');
+        const tempSlider = document.getElementById('temp-slider');
+        const rpmDisplay = document.getElementById('rpm-display');
+        const tempDisplay = document.getElementById('temp-display');
+        const tempBox = document.getElementById('temp-box');
+        const scanBtn = document.getElementById('scan-btn');
+        const errorAlert = document.getElementById('error-alert');
+
+        // --- EVENTOS ---
+        rpmSlider.addEventListener('input', (e) => {
+            currentRPM = parseInt(e.target.value);
+            rpmDisplay.textContent = `${currentRPM} RPM`;
+        });
+
+        tempSlider.addEventListener('input', (e) => {
+            currentTemp = parseInt(e.target.value);
+            tempDisplay.textContent = `${currentTemp} °C`;
+            updateTemperatureUI();
+        });
+
+        scanBtn.addEventListener('click', () => {
+            errorState = !errorState;
+            if (errorState) {
+                errorAlert.style.display = 'block';
+                scanBtn.textContent = 'LIMPIAR CÓDIGOS DE ERROR';
+                scanBtn.style.background = '#ff3333';
+                scanBtn.style.color = '#fff';
+                // Cambiar color de la malla del motor a rojo falla
+                pistonMat.color.setHex(0xff3333);
+            } else {
+                errorAlert.style.display = 'none';
+                scanBtn.textContent = 'SIMULAR ESCANEO DE ERRORES';
+                scanBtn.style.background = '#00f0ff';
+                scanBtn.style.color = '#050811';
+                // Restaurar color normal
+                pistonMat.color.setHex(0x00f0ff);
+            }
+        });
+
+        // Cambiar colores en el HUD según la temperatura
+        function updateTemperatureUI() {
+            if (currentTemp < 90) {
+                tempBox.style.borderLeftColor = "#00ff66"; // Ok (Verde)
+                blockMat.color.setHex(0x1a2b4c); // Motor normal azuloso
+            } else if (currentTemp >= 90 && currentTemp < 105) {
+                tempBox.style.borderLeftColor = "#ffcc00"; // Advertencia (Amarillo)
+                blockMat.color.setHex(0xd47a13); // Motor se empieza a calentar
+            } else {
+                tempBox.style.borderLeftColor = "#ff3333"; // Peligro (Rojo)
+                blockMat.color.setHex(0x990000); // Motor sobrecalentado
+            }
+        }
+
+        // --- BUCLE DE ANIMACIÓN ---
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            
+            // 1. La velocidad de rotación del motor 3D depende directamente de las RPM
+            const speedFactor = currentRPM / 800; // Multiplicador de velocidad
+            engineGroup.rotation.y = elapsedTime * 0.5 * speedFactor;
+
+            // 2. Simular el movimiento arriba y abajo de los pistones con una función Seno
+            pistons.forEach((piston, index) => {
+                // Desfasamos cada pistón para que se muevan de forma alternada como un motor real
+                const offset = index * Math.PI / 2;
+                piston.position.y = 0.9 + Math.sin((elapsedTime * (currentRPM / 150)) + offset) * 0.2;
+            });
+
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+
+        // Ajustar al redimensionar pantalla
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
 </html>
